@@ -20,10 +20,16 @@
         "description": "Admin password"
       }
     },
-    "dnsNameforLBIP": {
+    "dnsNameDC": {
       "type": "string",
       "metadata": {
-        "description": "DNS for Load Balancer IP"
+        "description": "DNS for DC"
+      }
+    },
+    "dnsNameRDS": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS for RDS"
       }
     },
     "imagePublisher": {
@@ -47,23 +53,23 @@
         "description": "Image SKU"
       }
     },
-    "lbName": {
+    "pipDC": {
       "type": "string",
-      "defaultValue": "myLB2",
+      "defaultValue": "pip-DC",
       "metadata": {
-        "description": "Load Balancer name"
+        "description": "Public IP Name"
       }
     },
-    "publicIPAddressName": {
+    "pipRDS": {
       "type": "string",
-      "defaultValue": "myPublicIP2",
+      "defaultValue": "pip-RDS",
       "metadata": {
         "description": "Public IP Name"
       }
     },
     "vnetName": {
       "type": "string",
-      "defaultValue": "myVNET2",
+      "defaultValue": "vnet",
       "metadata": {
         "description": "VNET name"
       }
@@ -75,25 +81,18 @@
         "description": "Size of the VM"
       }
     },
-    "pdcName": {
+    "dcName": {
       "type": "string",
-      "defaultValue": "VM-PDC",
+      "defaultValue": "vm-DC",
       "metadata": {
-        "description": "Name of the Primary Domain Controller (PDC)"
+        "description": "Name of the Domain Controller"
       }
     },
-    "bdcName": {
+    "rdpName": {
       "type": "string",
-      "defaultValue": "VM-BDC",
+      "defaultValue": "vm-RDS",
       "metadata": {
-        "description": "Name of the Backup Domain Controller (PDC)"
-      }
-    },
-    "availabilitySetName": {
-      "type": "string",
-      "defaultValue": "myAvSet",
-      "metadata": {
-        "description": "Name of the availabilitySet"
+        "description": "Name of the RDS Server"
       }
     },
     "addressPrefix": {
@@ -123,21 +122,14 @@
     "publicIPAddressType": "Dynamic",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vnetName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',parameters ('subnetName'))]",
-    "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('publicIPAddressName'))]",
-    "lbID": "[resourceId('Microsoft.Network/loadBalancers',parameters('lbName'))]",
-    "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
-    "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/BackendPool1')]",
-    "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
-    "pdcNicName": "[concat ('nic-', parameters('pdcname'))]",
-    "bdcNicName": "[concat ('nic-', parameters('bdcname'))]",
-    "pdcNatRdp": "[concat ('RDP-', parameters('pdcname'))]",
-    "bdcNatRdp": "[concat ('RDP-', parameters('bdcname'))]",
-    "pdcOSDiskName": "[concat (parameters('pdcname'), 'osdisk')]",
-    "pdcADDiskName": "[concat (parameters('pdcname'), 'addisk')]",
-    "pdcADDisksize": "32",
-    "bdcOSDiskName": "[concat (parameters('bdcname'), 'osdisk')]",
-    "bdcADDiskName": "[concat (parameters('bdcname'), 'addisk')]",
-    "bdcADDisksize": "32"
+    "dcNicName": "[concat ('nic-', parameters('dcname'))]",
+    "rdpNicName": "[concat ('nic-', parameters('rdpname'))]",
+    "dcOSDiskName": "[concat (parameters('dcname'), 'osdisk')]",
+    "rdpOSDiskName": "[concat (parameters('rdpname'), 'osdisk')]",
+    "dcADDiskName": "[concat (parameters('dcname'), 'addisk')]",
+    "dcADDisksize": "32",
+    "nsgDC": "nsg-DC",
+    "nsgRDS": "nsg-RDS"
   },
   "resources": [
     {
@@ -150,21 +142,26 @@
       }
     },
     {
-      "type": "Microsoft.Compute/availabilitySets",
-      "name": "[parameters('availabilitySetName')]",
-      "apiVersion": "2015-05-01-preview",
-      "location": "[resourceGroup().location]",
-      "properties": { }
-    },
-    {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[parameters('publicIPAddressName')]",
+      "name": "[parameters('pipDC')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsNameforLBIP')]"
+          "domainNameLabel": "[parameters('dnsNameDC')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('pipRDS')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsNameRDS')]"
         }
       }
     },
@@ -191,32 +188,47 @@
     },
     {
       "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('pdcNicName'))]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('nsgDC')]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]",
-        "[concat('Microsoft.Network/loadBalancers/', parameters('lbName'))]"
-      ],
       "properties": {
-        "ipConfigurations": [
+        "securityRules": [
           {
-            "name": "ipconfig1",
+            "name": "RDP",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[variables('subnetRef')]"
-              },
-              "loadBalancerBackendAddressPools": [
-                {
-                  "id": "[concat(variables('lbID'), '/backendAddressPools/BackendPool1')]"
-                }
-              ],
-              "loadBalancerInboundNatRules": [
-                {
-                  "id": "[concat(variables('lbID'),'/inboundNatRules/', variables('pdcNatRdp'))]"
-                }
-              ]
+              "description": "Allows RDP traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('nsgRDS')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "RDP",
+            "properties": {
+              "description": "Allows RDP traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
             }
           }
         ]
@@ -225,83 +237,56 @@
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('bdcNicName'))]",
+      "name": "[concat(variables('dcNicName'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]",
-        "[concat('Microsoft.Network/loadBalancers/', parameters('lbName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgDC'))]"
       ],
       "properties": {
         "ipConfigurations": [
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[variables('subnetRef')]"
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgDC'))]"
               },
-              "loadBalancerBackendAddressPools": [
-                {
-                  "id": "[concat(variables('lbID'), '/backendAddressPools/BackendPool1')]"
-                }
-              ],
-              "loadBalancerInboundNatRules": [
-                {
-                  "id": "[concat(variables('lbID'),'/inboundNatRules/', variables('bdcNatRdp'))]"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "apiVersion": "2015-05-01-preview",
-      "name": "[parameters('lbName')]",
-      "type": "Microsoft.Network/loadBalancers",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', parameters('publicIPAddressName'))]"
-      ],
-      "properties": {
-        "frontendIPConfigurations": [
-          {
-            "name": "LoadBalancerFrontEnd",
-            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
-                "id": "[variables('publicIPAddressID')]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('pipDC'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
               }
             }
           }
-        ],
-        "backendAddressPools": [
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('dcNicName'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgDC'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
           {
-            "name": "BackendPool1"
-          }
-        ],
-        "inboundNatRules": [
-          {
-            "name": "[variables('pdcNatRdp')]",
+            "name": "ipconfig1",
             "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigID')]"
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgRDS'))]"
               },
-              "protocol": "tcp",
-              "frontendPort": 50001,
-              "backendPort": 3389,
-              "enableFloatingIP": false
-            }
-          },
-          {
-            "name": "[variables('bdcNatRdp')]",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigID')]"
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('pipRDS'))]"
               },
-              "protocol": "tcp",
-              "frontendPort": 50002,
-              "backendPort": 3389,
-              "enableFloatingIP": false
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
             }
           }
         ]
@@ -310,22 +295,18 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(parameters('pdcName'))]",
+      "name": "[concat(parameters('dcName'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('pdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', parameters('availabilitySetName'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('dcNicName'))]"
       ],
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
-        },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[parameters('pdcName')]",
+          "computerName": "[parameters('dcName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -339,7 +320,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('pdcOSDiskName'), '.vhd')]"
+              "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('dcOSDiskName'), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -348,19 +329,19 @@
             {
               "name": "addisk",
               "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('pdcADDiskName'), '.vhd')]"
+                "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('dcADDiskName'), '.vhd')]"
               },
               "caching": "none",
               "createOption": "Empty",
               "lun": 0,
-              "diskSizeGB": "[variables('pdcADDiskSize')]"
+              "diskSizeGB": "[variables('dcADDiskSize')]"
             }
           ]
         },
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('pdcNicName')))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('dcNicName')))]"
             }
           ]
         },
@@ -375,22 +356,18 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(parameters('bdcName'))]",
+      "name": "[concat(parameters('rdpName'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('bdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', parameters('availabilitySetName'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('rdpNicName'))]"
       ],
       "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
-        },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[parameters('bdcName')]",
+          "computerName": "[parameters('rdpName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -404,28 +381,16 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('bdcOSDiskName'), '.vhd')]"
+              "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('rdpOSDiskName'), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "addisk",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'), '.blob.core.windows.net/vhds/', variables('bdcADDiskName'), '.vhd')]"
-              },
-              "caching": "none",
-              "createOption": "Empty",
-              "lun": 0,
-              "diskSizeGB": "[variables('bdcADDiskSize')]"
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('bdcNicName')))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('rdpNicName')))]"
             }
           ]
         },
