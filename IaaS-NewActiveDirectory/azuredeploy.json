@@ -37,21 +37,27 @@
     },
     "lbName": {
       "type": "string",
-      "defaultValue": "myLB2",
+      "defaultValue": "lb-AD",
       "metadata": {
         "description": "Load Balancer name"
       }
     },
     "publicIPAddressName": {
       "type": "string",
-      "defaultValue": "myPublicIP2",
+      "defaultValue": "pip-AD",
       "metadata": {
         "description": "Public IP Name"
       }
     },
+    "publicIpDnsName": {
+      "type": "string",
+      "metadata": {
+        "description": "Public DNS name og the Loadbalancer"
+      }
+    },
     "vnetName": {
       "type": "string",
-      "defaultValue": "myVNET2",
+      "defaultValue": "vnet-AD",
       "metadata": {
         "description": "VNET name"
       }
@@ -65,31 +71,36 @@
     },
     "pdcName": {
       "type": "string",
-      "defaultValue": "VM-PDC",
+      "defaultValue": "vm-PDC",
       "metadata": {
         "description": "Name of the Primary Domain Controller (PDC)"
       }
     },
     "bdcName": {
       "type": "string",
-      "defaultValue": "VM-BDC",
+      "defaultValue": "vm-BDC",
       "metadata": {
         "description": "Name of the Backup Domain Controller (PDC)"
       }
     },
     "domainname": {
       "type": "string",
-      "defaultValue": "mylab.local",
       "metadata": {
         "description": "Name of the domain"
       }
+    },
+    "assetLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The location of resources such as templates and DSC modules that the script is dependent"
+      },
+      "defaultValue": "https://raw.githubusercontent.com/haavardg/AzureARM/tree/master/IaaS-NewActiveDirectory"
     }
   },
   "variables": {
-    "dnsNameforLBIP": "[concat(uniquestring(resourceGroup().id))]",
     "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'storad')]",
     "storageAccountType": "Standard_LRS",
-    "availabilitySetName": "myAvSet",
+    "availabilitySetName": "as-AD",
     "addressPrefix": "10.1.0.0/16",
     "subnetName": "Subnet-1",
     "subnetPrefix": "10.1.0.0/24",
@@ -108,9 +119,15 @@
     "pdcOSDiskName": "[concat (parameters('pdcname'), 'osdisk')]",
     "pdcADDiskName": "[concat (parameters('pdcname'), 'addisk')]",
     "pdcADDisksize": "32",
+    "pdcPrivateIp": "10.1.0.4",
     "bdcOSDiskName": "[concat (parameters('bdcname'), 'osdisk')]",
     "bdcADDiskName": "[concat (parameters('bdcname'), 'addisk')]",
-    "bdcADDisksize": "32"
+    "bdcADDisksize": "32",
+    "bdcPrivateIp": "10.1.0.5",
+    "DscUrl": "[concat(parameters('assetLocation'),'Configuration.ps1.zip')]",
+    "PDCConfigurationFunction": "CreateADPDC.ps1\\CreatePDC",
+    "BDCConfigurationFunction": "CreateADBDC.ps1\\CreateBDC"
+
   },
   "resources": [
     {
@@ -137,7 +154,7 @@
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[variables('dnsNameforLBIP')]"
+          "domainNameLabel": "[parameters('publicIpDnsName')]"
         }
       }
     },
@@ -176,7 +193,8 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('pdcPrivateIp')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -209,7 +227,8 @@
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('bdcPrivateIp')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -353,7 +372,8 @@
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('bdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
+        "Microsoft.Resources/deployments/updatevnetdns"
       ],
       "properties": {
         "availabilitySet": {
@@ -409,7 +429,142 @@
           }
         }
       }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('pdcName'),'/CreatePDC')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('pdcName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.11",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "ModulesUrl": "[variables('DSCURL')]",
+          "ConfigurationFunction": "[variables('PDCConfigurationFunction')]",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adminUserName')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updatevnetdns1",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreatePDC')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('assetLocation'),'vnetdns.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "virtualNetworkName": {
+            "value": "[parameters('vnetname')]"
+          },
+          "virtualNetworkAddressRange": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "subnetName": {
+            "value": "[variables('subnetName')]"
+          },
+          "subnetRange": {
+            "value": "[variables('subnetPrefix')]"
+          },
+          "DNSServerAddress": {
+            "value": [
+              "[variables('pdcPrivateIp')]"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('bdcName'),'/CreateBDC')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('bdcName'))]",
+        "Microsoft.Resources/deployments/updatevnetdns1"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.11",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "ModulesUrl": "[variables('DSCURL')]",
+          "ConfigurationFunction": "[variables('BDCConfigurationFunction')]",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adminUserName')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updatevnetdns2",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('bdcname'),'/extensions/CreateBDC')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('assetLocation'),'vnetdns.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "virtualNetworkName": {
+            "value": "[parameters('vnetname')]"
+          },
+          "virtualNetworkAddressRange": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "subnetName": {
+            "value": "[variables('subnetName')]"
+          },
+          "subnetRange": {
+            "value": "[variables('subnetPrefix')]"
+          },
+          "DNSServerAddress": {
+            "value": [
+              "[variables('pdcPrivateIp')]",
+              "[variables('bdcPrivateIp')]"
+            ]
+          }
+        }
+      }
     }
 
   ]
 }
+
+
+
