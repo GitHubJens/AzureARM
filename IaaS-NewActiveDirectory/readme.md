@@ -20,7 +20,7 @@ The template will deploy two domain controllers and configure them using DSC bas
 
 ### Optional Parameters:
 |Name|Default|Description|
-|:---|:---------------------|
+|:---|:-------------|:---------------------|
 |vnetName|vnet-AD|VNET name|
 |lbName|lb-AD|Load Balancer name|
 |publicIPAddressName|pip-AD|Public IP Name|

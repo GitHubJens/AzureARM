@@ -146,8 +146,8 @@
     "bdcPrivateIp": "10.1.0.5",
     "PDCConfigurationURL": "[concat(parameters('assetLocation'),'CreateADPDC.ps1.zip')]",
     "BDCConfigurationURL": "[concat(parameters('assetLocation'),'CreateADBDC.ps1.zip')]",
-    "PDCConfigurationFunction": "CreateADPDC.ps1\\CreatePDC",
-    "BDCConfigurationFunction": "CreateADBDC.ps1\\CreateBDC"
+    "PDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC",
+    "BDCConfigurationFunction": "CreateADBDC.ps1\\CreateADBDC"
 
   },
   "resources": [
