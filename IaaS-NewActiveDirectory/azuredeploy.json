@@ -2,6 +2,12 @@
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "domainname": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the domain"
+      }
+    },
     "adminUsername": {
       "type": "string",
       "metadata": {
@@ -12,6 +18,68 @@
       "type": "securestring",
       "metadata": {
         "description": "Admin password"
+      }
+    },
+    "publicIpDnsName": {
+      "type": "string",
+      "metadata": {
+        "description": "Public DNS name og the Loadbalancer"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "vnet-AD",
+      "metadata": {
+        "description": "VNET name"
+      }
+    },
+    "lbName": {
+      "type": "string",
+      "defaultValue": "lb-AD",
+      "metadata": {
+        "description": "Load Balancer name"
+      }
+    },
+    "publicIPAddressName": {
+      "type": "string",
+      "defaultValue": "pip-AD",
+      "metadata": {
+        "description": "Public IP Name"
+      }
+    },
+    "pdcName": {
+      "type": "string",
+      "defaultValue": "vm-PDC",
+      "metadata": {
+        "description": "Name of the Primary Domain Controller (PDC)"
+      }
+    },
+    "bdcName": {
+      "type": "string",
+      "defaultValue": "vm-BDC",
+      "metadata": {
+        "description": "Name of the Backup Domain Controller (PDC)"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1",
+      "allowedValues": [
+        "Standard_D1",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D1_v2",
+        "Standard_D2_v2",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_A1",
+        "Standard_A2",
+        "Standard_A3",
+        "Standard_A4"
+      ],
+      "metadata": {
+        "description": "Size of the VM"
       }
     },
     "imagePublisher": {
@@ -30,71 +98,23 @@
     },
     "imageSKU": {
       "type": "string",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter"
+      ],
       "defaultValue": "2012-R2-Datacenter",
       "metadata": {
         "description": "Image SKU"
       }
     },
-    "lbName": {
-      "type": "string",
-      "defaultValue": "lb-AD",
-      "metadata": {
-        "description": "Load Balancer name"
-      }
-    },
-    "publicIPAddressName": {
-      "type": "string",
-      "defaultValue": "pip-AD",
-      "metadata": {
-        "description": "Public IP Name"
-      }
-    },
-    "publicIpDnsName": {
-      "type": "string",
-      "metadata": {
-        "description": "Public DNS name og the Loadbalancer"
-      }
-    },
-    "vnetName": {
-      "type": "string",
-      "defaultValue": "vnet-AD",
-      "metadata": {
-        "description": "VNET name"
-      }
-    },
-    "vmSize": {
-      "type": "string",
-      "defaultValue": "Standard_D1",
-      "metadata": {
-        "description": "Size of the VM"
-      }
-    },
-    "pdcName": {
-      "type": "string",
-      "defaultValue": "vm-PDC",
-      "metadata": {
-        "description": "Name of the Primary Domain Controller (PDC)"
-      }
-    },
-    "bdcName": {
-      "type": "string",
-      "defaultValue": "vm-BDC",
-      "metadata": {
-        "description": "Name of the Backup Domain Controller (PDC)"
-      }
-    },
-    "domainname": {
-      "type": "string",
-      "metadata": {
-        "description": "Name of the domain"
-      }
-    },
     "assetLocation": {
       "type": "string",
+      "defaultValue": "https://github.com/haavardg/AzureARM/raw/master/IaaS-NewActiveDirectory/",
       "metadata": {
         "description": "The location of resources such as templates and DSC modules that the script is dependent"
-      },
-      "defaultValue": "https://raw.githubusercontent.com/haavardg/AzureARM/tree/master/IaaS-NewActiveDirectory"
+      }
+
     }
   },
   "variables": {
@@ -125,8 +145,8 @@
     "bdcADDisksize": "32",
     "bdcPrivateIp": "10.1.0.5",
     "DscUrl": "[concat(parameters('assetLocation'),'Configuration.ps1.zip')]",
-    "PDCConfigurationFunction": "CreateADPDC.ps1\\CreatePDC",
-    "BDCConfigurationFunction": "CreateADBDC.ps1\\CreateBDC"
+    "PDCConfigurationFunction": "Configuration.ps1\\CreatePDC",
+    "BDCConfigurationFunction": "Configuration.ps1\\CreateBDC"
 
   },
   "resources": [
@@ -373,7 +393,7 @@
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('bdcNicName'))]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
-        "Microsoft.Resources/deployments/updatevnetdns"
+        "Microsoft.Resources/deployments/updatevnetdns1"
       ],
       "properties": {
         "availabilitySet": {
