@@ -26,7 +26,7 @@ The template will deploy two domain controllers and configure them using DSC bas
 |publicIPAddressName|pip-AD|Public IP Name|
 |pdcName|vm-PDC|Name of the Primary Domain Controller (PDC)|
 |bdcName|vm-BDC|Name of the Backup Domain Controller (PDC)|
-|vmSize|Standard_D1|Size of the VM|
+|vmSize|Standard D1|Size of the VM|
 |imagePublisher|MicrosoftWindowsServer|Image Publisher|
 |imageOffer|WindowsServer|Image Offer|
 |imageSKU|2012-R2-Datacenter|Image SKU|
