@@ -144,9 +144,10 @@
     "bdcADDiskName": "[concat (parameters('bdcname'), 'addisk')]",
     "bdcADDisksize": "32",
     "bdcPrivateIp": "10.1.0.5",
-    "DscUrl": "[concat(parameters('assetLocation'),'Configuration.ps1.zip')]",
-    "PDCConfigurationFunction": "Configuration.ps1\\CreatePDC",
-    "BDCConfigurationFunction": "Configuration.ps1\\CreateBDC"
+    "PDCConfigurationURL": "[concat(parameters('assetLocation'),'CreateADPDC.ps1.zip')]",
+    "BDCConfigurationURL": "[concat(parameters('assetLocation'),'CreateADBDC.ps1.zip')]",
+    "PDCConfigurationFunction": "CreateADPDC.ps1\\CreatePDC",
+    "BDCConfigurationFunction": "CreateADBDC.ps1\\CreateBDC"
 
   },
   "resources": [
@@ -464,7 +465,7 @@
         "typeHandlerVersion": "2.11",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "ModulesUrl": "[variables('DSCURL')]",
+          "ModulesUrl": "[variables('PDCConfigurationURL')]",
           "ConfigurationFunction": "[variables('PDCConfigurationFunction')]",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -530,7 +531,7 @@
         "typeHandlerVersion": "2.11",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "ModulesUrl": "[variables('DSCURL')]",
+          "ModulesUrl": "[variables('BDCConfigurationURL')]",
           "ConfigurationFunction": "[variables('BDCConfigurationFunction')]",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
