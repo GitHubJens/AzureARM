@@ -30,5 +30,7 @@ The template will deploy two domain controllers and configure them using DSC bas
 |imagePublisher|MicrosoftWindowsServer|Image Publisher|
 |imageOffer|WindowsServer|Image Offer|
 |imageSKU|2012-R2-Datacenter|Image SKU|
+|assetLocation|https://github.com/haavardg/AzureARM/raw/master/IaaS-NewActiveDirectory/|The location of resources such as templates and DSC modules that the script is dependent|
 
+### Deploy:
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
