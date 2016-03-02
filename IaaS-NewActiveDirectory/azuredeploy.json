@@ -145,8 +145,8 @@
     "bdcADDisksize": "32",
     "bdcPrivateIp": "10.1.0.5",
     "DSCConfigurationURL": "[concat(parameters('assetLocation'),'Configure.ps1.zip')]",
-    "PDCConfigurationFunction": "Configure.ps1\\CreateADPDC",
-    "BDCConfigurationFunction": "Configure.ps1\\CreateADBDC"
+    "PDCConfigurationFunction": "Configure.ps1\\CreatePDC",
+    "BDCConfigurationFunction": "Configure.ps1\\CreateBDC"
 
   },
   "resources": [
@@ -384,72 +384,6 @@
         }
       }
     },
-
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('pdcName'),'/CreatePDC')]",
-      "apiVersion": "2015-05-01-preview",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines', parameters('pdcName'))]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Powershell",
-        "type": "DSC",
-        "typeHandlerVersion": "2.11",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "ModulesUrl": "[variables('DSCConfigurationURL')]",
-          "ConfigurationFunction": "[variables('PDCConfigurationFunction')]",
-          "Properties": {
-            "DomainName": "[parameters('domainName')]",
-            "AdminCreds": {
-              "UserName": "[parameters('adminUserName')]",
-              "Password": "PrivateSettingsRef:AdminPassword"
-            }
-          }
-        },
-        "protectedSettings": {
-          "Items": {
-            "AdminPassword": "[parameters('adminPassword')]"
-          }
-        }
-      }
-    },
-    {
-      "apiVersion": "2015-01-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "updatevnetdns1",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreatePDC')]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(parameters('assetLocation'),'vnetdns.json')]",
-          "contentVersion": "1.0.0.0"
-        },
-        "parameters": {
-          "virtualNetworkName": {
-            "value": "[parameters('vnetname')]"
-          },
-          "virtualNetworkAddressRange": {
-            "value": "[variables('addressPrefix')]"
-          },
-          "subnetName": {
-            "value": "[variables('subnetName')]"
-          },
-          "subnetRange": {
-            "value": "[variables('subnetPrefix')]"
-          },
-          "DNSServerAddress": {
-            "value": [
-              "[variables('pdcPrivateIp')]"
-            ]
-          }
-        }
-      }
-    },
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
@@ -458,8 +392,7 @@
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('bdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]",
-        "Microsoft.Resources/deployments/updatevnetdns1"
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
         "availabilitySet": {
@@ -518,11 +451,42 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('pdcName'),'/CreatePDC')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('pdcName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.11",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "ModulesUrl": "[variables('DSCConfigurationURL')]",
+          "ConfigurationFunction": "[variables('PDCConfigurationFunction')]",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adminUserName')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('bdcName'),'/CreateBDC')]",
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('bdcName'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreatePDC')]",
         "Microsoft.Resources/deployments/updatevnetdns1"
       ],
       "properties": {
@@ -544,6 +508,40 @@
         "protectedSettings": {
           "Items": {
             "AdminPassword": "[parameters('adminPassword')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "updatevnetdns1",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreatePDC')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('assetLocation'),'vnetdns.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "virtualNetworkName": {
+            "value": "[parameters('vnetname')]"
+          },
+          "virtualNetworkAddressRange": {
+            "value": "[variables('addressPrefix')]"
+          },
+          "subnetName": {
+            "value": "[variables('subnetName')]"
+          },
+          "subnetRange": {
+            "value": "[variables('subnetPrefix')]"
+          },
+          "DNSServerAddress": {
+            "value": [
+              "[variables('pdcPrivateIp')]"
+            ]
           }
         }
       }

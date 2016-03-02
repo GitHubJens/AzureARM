@@ -17,16 +17,31 @@ configuration CreatePDC
 
     Node localhost
     {
+        LocalConfigurationManager
+        {
+            ConfigurationMode = 'ApplyOnly'
+            RebootNodeIfNeeded = $true
+        }
+
         WindowsFeature DNS 
         { 
             Ensure = "Present" 
             Name = "DNS"
         }
+        
+        WindowsFeature DnsTools
+        {
+            Ensure = "Present"
+            Name = "RSAT-DNS-Server"
+            DependsOn = "[WindowsFeature]DNS"
+        }
+
         xDnsServerAddress DnsServerAddress 
         { 
             Address        = '127.0.0.1' 
             InterfaceAlias = 'Ethernet'
             AddressFamily  = 'IPv4'
+            DependsOn = "[WindowsFeature]DNS"
         }
         xWaitforDisk Disk2
         {
@@ -54,6 +69,7 @@ configuration CreatePDC
             DatabasePath = "F:\NTDS"
             LogPath = "F:\NTDS"
             SysvolPath = "F:\SYSVOL"
+            DependsOn = "[WindowsFeature]ADDSInstall"
         } 
    }
 } 
@@ -77,6 +93,32 @@ configuration CreateBDC
    
     Node localhost
     {
+        LocalConfigurationManager
+        {
+            ConfigurationMode = 'ApplyOnly'
+            RebootNodeIfNeeded = $true
+        }
+
+        WindowsFeature DNS 
+        { 
+            Ensure = "Present" 
+            Name = "DNS"
+        }
+        
+        WindowsFeature DnsTools
+        {
+            Ensure = "Present"
+            Name = "RSAT-DNS-Server"
+            DependsOn = "[WindowsFeature]DNS"
+        }
+
+        xDnsServerAddress DnsServerAddress 
+        { 
+            Address        = '127.0.0.1' 
+            InterfaceAlias = 'Ethernet'
+            AddressFamily  = 'IPv4'
+            DependsOn = "[WindowsFeature]DNS"
+        }
         xWaitforDisk Disk2
         {
              DiskNumber = 2
@@ -94,14 +136,7 @@ configuration CreateBDC
         { 
             Ensure = "Present" 
             Name = "AD-Domain-Services"
-        } 
-        xWaitForADDomain DscForestWait 
-        { 
-            DomainName = $DomainName 
-            DomainUserCredential= $DomainCreds
-            RetryCount = $RetryCount 
-            RetryIntervalSec = $RetryIntervalSec
-        } 
+        }
         xADDomainController BDC 
         { 
             DomainName = $DomainName 
