@@ -12,7 +12,7 @@ configuration CreateADPDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName xActiveDirectory,xDisk, xNetworking, cDisk, PSDesiredStateConfiguration
+    Import-DscResource -ModuleName xActiveDirectory,xStorage, xNetworking, PSDesiredStateConfiguration
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
     $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
     $InterfaceAlias=$($Interface.Name)
@@ -103,7 +103,7 @@ configuration PrepareADBDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName  xDisk, cDisk, xNetworking
+    Import-DscResource -ModuleName  xStorage, xNetworking
     $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
     $InterfaceAlias=$($Interface.Name)
     Node localhost
@@ -156,7 +156,7 @@ configuration ConfigureADBDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName xActiveDirectory, xDisk, cDisk
+    Import-DscResource -ModuleName xActiveDirectory, xStorage
 
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
 

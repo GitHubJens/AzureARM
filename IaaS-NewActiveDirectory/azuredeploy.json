@@ -144,10 +144,10 @@
     "bdcADDiskName": "[concat (parameters('bdcname'), 'addisk')]",
     "bdcADDisksize": "32",
     "bdcPrivateIp": "10.1.0.5",
-    "DSCConfigurationURL": "[concat(parameters('assetLocation'),'Configure.ps1.zip')]",
-    "PDCConfigurationFunction": "Configure.ps1\\CreateADPDC",
-    "BDCConfigurationFunction": "Configure.ps1\\CreateADBDC",
-    "BDCConfigurationFunctionPrepareADBDC": "Configure.ps1\\PrepareADBDC"
+    "DSCConfURL": "[concat(parameters('assetLocation'),'Configure.ps1.zip')]",
+    "DSCConfFuncCreateADPDC": "Configure.ps1\\CreateADPDC",
+    "DSCConfFuncCreateADBDC": "Configure.ps1\\CreateADBDC",
+    "DSCConfFuncPrepareADBDC": "Configure.ps1\\PrepareADBDC"
 
   },
   "resources": [
@@ -464,8 +464,8 @@
         "typeHandlerVersion": "2.11",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "ModulesUrl": "[variables('DSCConfigurationURL')]",
-          "ConfigurationFunction": "[variables('PDCConfigurationFunction')]",
+          "ModulesUrl": "[variables('DSCConfURL')]",
+          "ConfigurationFunction": "[variables('DSCConfFuncCreateADPDC')]",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
@@ -488,7 +488,6 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreateADPDC')]",
-        "Microsoft.Resources/deployments/updatevnetdns1"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -496,8 +495,8 @@
         "typeHandlerVersion": "2.11",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "ModulesUrl": "[variables('DSCConfigurationURL')]",
-          "ConfigurationFunction": "[variables('BDCConfigurationFunctionPrepareADBDC')]",
+          "ModulesUrl": "[variables('DSCConfURL')]",
+          "ConfigurationFunction": "[variables('DSCConfFuncPrepareADBDC')]",
           "Properties": {
             "DNSServer": "[variables('pdcPrivateIp')]"
           }
@@ -510,8 +509,7 @@
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('BDCName'),'/extensions/PrepareADBDC')]",
-        "Microsoft.Resources/deployments/updatevnetdns1"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('BDCName'),'/extensions/PrepareADBDC')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -519,8 +517,8 @@
         "typeHandlerVersion": "2.11",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "ModulesUrl": "[variables('DSCConfigurationURL')]",
-          "ConfigurationFunction": "[variables('BDCConfigurationFunction')]",
+          "ModulesUrl": "[variables('DSCConfURL')]",
+          "ConfigurationFunction": "[variables('DSCConfFuncCreateADBDC')]",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
@@ -539,41 +537,7 @@
     {
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
-      "name": "updatevnetdns1",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreateADPDC')]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(parameters('assetLocation'),'vnetdns.json')]",
-          "contentVersion": "1.0.0.0"
-        },
-        "parameters": {
-          "virtualNetworkName": {
-            "value": "[parameters('vnetname')]"
-          },
-          "virtualNetworkAddressRange": {
-            "value": "[variables('addressPrefix')]"
-          },
-          "subnetName": {
-            "value": "[variables('subnetName')]"
-          },
-          "subnetRange": {
-            "value": "[variables('subnetPrefix')]"
-          },
-          "DNSServerAddress": {
-            "value": [
-              "[variables('pdcPrivateIp')]"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "apiVersion": "2015-01-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "updatevnetdns2",
+      "name": "updatevnetdns",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('bdcname'),'/extensions/CreateADBDC')]"
       ],
