@@ -12,7 +12,7 @@ configuration CreateADPDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName xActiveDirectory,xStorage, xNetworking, PSDesiredStateConfiguration
+    Import-DscResource -ModuleName xActiveDirectory, xDisk, cDisk, xNetworking, PSDesiredStateConfiguration
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
     $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
     $InterfaceAlias=$($Interface.Name)
@@ -64,11 +64,10 @@ configuration CreateADPDC
             RetryCount = $RetryCount
         }
 
-        xDisk ADDataDisk
+        cDiskNoRestart ADDataDisk
         {
             DiskNumber = 2
             DriveLetter = "F"
-            FSLabel = "ADData"
             DependsOn="[xWaitforDisk]Disk2"
         }
 
@@ -76,7 +75,7 @@ configuration CreateADPDC
         {
             Ensure = "Present"
             Name = "AD-Domain-Services"
-            DependsOn="[xDisk]ADDataDisk"
+            DependsOn="[cDiskNoRestart]ADDataDisk"
         }
 
         xADDomain FirstDS
@@ -103,7 +102,7 @@ configuration PrepareADBDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName  xStorage, xNetworking
+    Import-DscResource -ModuleName  xDisk, cDisk, xNetworking
     $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
     $InterfaceAlias=$($Interface.Name)
     Node localhost
@@ -119,18 +118,17 @@ configuration PrepareADBDC
                 RetryIntervalSec =$RetryIntervalSec
                 RetryCount = $RetryCount
         }
-        xDisk ADDataDisk
+        cDiskNoRestart ADDataDisk
         {
             DiskNumber = 2
             DriveLetter = "F"
-            FSLabel = "ADData"
             DependsOn="[xWaitforDisk]Disk2"
         }
         WindowsFeature ADDSInstall
         {
             Ensure = "Present"
             Name = "AD-Domain-Services"
-            DependsOn = "[xDisk]ADDataDisk"
+            DependsOn = "[cDiskNoRestart]ADDataDisk"
         }
         xDnsServerAddress DnsServerAddress
         {
@@ -156,7 +154,7 @@ configuration ConfigureADBDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName xActiveDirectory, xStorage
+    Import-DscResource -ModuleName xActiveDirectory, xDisk, cDisk
 
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
 
