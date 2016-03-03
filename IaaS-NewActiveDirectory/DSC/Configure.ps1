@@ -99,7 +99,7 @@ configuration CreateADPDC
    }
 }
 
-configuration ConfigureADBDC
+configuration CreateADBDC
 {
    param
     (
