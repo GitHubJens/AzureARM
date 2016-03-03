@@ -38,6 +38,7 @@ configuration CreateADPDC
             DependsOn = "[WindowsFeature]DNS"
         }
 
+
         xDnsServerAddress DnsServerAddress
         {
             Address        = '127.0.0.1'
@@ -77,6 +78,13 @@ configuration CreateADPDC
             Name = "AD-Domain-Services"
             DependsOn="[cDiskNoRestart]ADDataDisk"
         }
+        
+        WindowsFeature ADDSTools
+        {
+            Ensure = "Present"
+            Name = "RSAT-ADDS"
+            DependsOn ="[WindowsFeature]ADDSInstall"
+        }
 
         xADDomain FirstDS
         {
@@ -86,15 +94,21 @@ configuration CreateADPDC
             DatabasePath = "F:\NTDS"
             LogPath = "F:\NTDS"
             SysvolPath = "F:\SYSVOL"
-            DependsOn = "[WindowsFeature]ADDSInstall"
+            DependsOn = "[WindowsFeature]ADDSTools"
         }
    }
 }
 
-configuration PrepareADBDC
+configuration ConfigureADBDC
 {
    param
     (
+        [Parameter(Mandatory)]
+        [String]$DomainName,
+
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCredential]$Admincreds,
+        
         [Parameter(Mandatory)]
         [String]$DNSServer,
 
@@ -102,14 +116,15 @@ configuration PrepareADBDC
         [Int]$RetryIntervalSec=30
     )
 
-    Import-DscResource -ModuleName  xDisk, cDisk, xNetworking
-    $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
-    $InterfaceAlias=$($Interface.Name)
+    Import-DscResource -ModuleName xActiveDirectory, xDisk, cDisk, xNetworking
+
+    [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+
     Node localhost
     {
         LocalConfigurationManager
         {
-            ConfigurationMode = 'ApplyOnly'
+       	    ConfigurationMode = 'ApplyOnly'
             RebootNodeIfNeeded = $true
         }
         xWaitforDisk Disk2
@@ -130,40 +145,18 @@ configuration PrepareADBDC
             Name = "AD-Domain-Services"
             DependsOn = "[cDiskNoRestart]ADDataDisk"
         }
+        WindowsFeature ADDSTools
+        {
+            Ensure = "Present"
+            Name = "RSAT-ADDS"
+            DependsOn ="[WindowsFeature]ADDSInstall"
+        }
         xDnsServerAddress DnsServerAddress
         {
             Address        = $DNSServer
             InterfaceAlias = $InterfaceAlias
             AddressFamily  = 'IPv4'
             DependsOn="[WindowsFeature]ADDSInstall"
-        }
-   }
-}
-
-configuration ConfigureADBDC
-{
-   param
-    (
-        [Parameter(Mandatory)]
-        [String]$DomainName,
-
-        [Parameter(Mandatory)]
-        [System.Management.Automation.PSCredential]$Admincreds,
-
-        [Int]$RetryCount=20,
-        [Int]$RetryIntervalSec=30
-    )
-
-    Import-DscResource -ModuleName xActiveDirectory, xDisk, cDisk
-
-    [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
-
-    Node localhost
-    {
-        LocalConfigurationManager
-        {
-       	    ConfigurationMode = 'ApplyOnly'
-            RebootNodeIfNeeded = $true
         }
         xWaitForADDomain DscForestWait
         {

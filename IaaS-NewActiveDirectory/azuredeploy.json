@@ -483,33 +483,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('bdcName'),'/PrepareADBDC')]",
-      "apiVersion": "2015-05-01-preview",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreateADPDC')]",
-      ],
-      "properties": {
-        "publisher": "Microsoft.Powershell",
-        "type": "DSC",
-        "typeHandlerVersion": "2.11",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "ModulesUrl": "[variables('DSCConfURL')]",
-          "ConfigurationFunction": "[variables('DSCConfFuncPrepareADBDC')]",
-          "Properties": {
-            "DNSServer": "[variables('pdcPrivateIp')]"
-          }
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('bdcName'),'/CreateADBDC')]",
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', parameters('BDCName'),'/extensions/PrepareADBDC')]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('PDCName'),'/extensions/CreateADPDC')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -520,6 +498,7 @@
           "ModulesUrl": "[variables('DSCConfURL')]",
           "ConfigurationFunction": "[variables('DSCConfFuncCreateADBDC')]",
           "Properties": {
+            "DNSServer": "[variables('pdcPrivateIp')]",
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
               "UserName": "[parameters('adminUserName')]",
