@@ -11,8 +11,8 @@ configuration CreatePDC
         [Int]$RetryCount=20,
         [Int]$RetryIntervalSec=30
     ) 
-    
-    Import-DscResource -ModuleName xActiveDirectory,xStorage, xNetworking
+
+    Import-DscResource -ModuleName xActiveDirectory,xStorage,xNetworking
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
 
     Node localhost
@@ -33,7 +33,6 @@ configuration CreatePDC
         {
             Ensure = "Present"
             Name = "RSAT-DNS-Server"
-            DependsOn = "[WindowsFeature]DNS"
         }
 
         xDnsServerAddress DnsServerAddress 
@@ -41,7 +40,6 @@ configuration CreatePDC
             Address        = '127.0.0.1' 
             InterfaceAlias = 'Ethernet'
             AddressFamily  = 'IPv4'
-            DependsOn = "[WindowsFeature]DNS"
         }
         xWaitforDisk Disk2
         {
@@ -54,7 +52,6 @@ configuration CreatePDC
             DiskNumber = 2
             DriveLetter = "F"
             FSLabel ="ADDisk"
-
         }
         WindowsFeature ADDSInstall 
         { 
@@ -69,7 +66,6 @@ configuration CreatePDC
             DatabasePath = "F:\NTDS"
             LogPath = "F:\NTDS"
             SysvolPath = "F:\SYSVOL"
-            DependsOn = "[WindowsFeature]ADDSInstall"
         } 
    }
 } 
@@ -87,7 +83,7 @@ configuration CreateBDC
         [Int]$RetryCount=20,
         [Int]$RetryIntervalSec=30
     ) 
-    Import-DscResource -ModuleName xActiveDirectory,xStorage
+    Import-DscResource -ModuleName xActiveDirectory,xStorage,xNetworking
     
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
    
@@ -109,7 +105,6 @@ configuration CreateBDC
         {
             Ensure = "Present"
             Name = "RSAT-DNS-Server"
-            DependsOn = "[WindowsFeature]DNS"
         }
 
         xDnsServerAddress DnsServerAddress 
@@ -117,7 +112,6 @@ configuration CreateBDC
             Address        = '127.0.0.1' 
             InterfaceAlias = 'Ethernet'
             AddressFamily  = 'IPv4'
-            DependsOn = "[WindowsFeature]DNS"
         }
         xWaitforDisk Disk2
         {
