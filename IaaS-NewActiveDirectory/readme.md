@@ -1,14 +1,14 @@
 # Create Active Directory Domain in Azure 
 
-This template deploys the following resources:
+This template deploys the following resources in one Resourse Group:
 
 +	Storage Account
 +	Virtual Network
 +	Two Domain Controllers in Avalibility Set
-+	Loadballancer with public IP and NAT rules for RDP
-+	Configure Activ Directory using DSC, both PDC and BDC
++	Load balancer with public IP and NAT rules for RDP
++	Configure Active Directory using Powershell DSC modules, both PDC and BDC
 
-The template will deploy two domain controllers and configure them using DSC based on the parameter input.
+The template will deploy two domain controllers and configure them using Powershell DSC moduels.
 
 ### Requierd Parameters:
 |Name|Description|
@@ -16,7 +16,7 @@ The template will deploy two domain controllers and configure them using DSC bas
 |domainname|Name of the domain|
 |adminUsername|Admin username|
 |adminPassword|Admin password|
-|publicIpDnsName|Public DNS name of the Loadbalancer|
+|publicIpDnsName|Public DNS name of the Load balancer|
 
 ### Optional Parameters:
 |Name|Default|Description|
