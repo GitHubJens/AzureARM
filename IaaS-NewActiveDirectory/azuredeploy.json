@@ -30,7 +30,28 @@
       "type": "string",
       "defaultValue": "vnet-AD",
       "metadata": {
-        "description": "VNET name"
+        "description": "Virtual Network name"
+      }
+    },
+    "vnetAddressSpace": {
+      "type": "string",
+      "defaultValue": "10.1.0.0/16",
+      "metadata": {
+        "description": "Virtual Network address space in CIDR format"
+      }
+    },
+    "vnetSubnetName": {
+      "type": "string",
+      "defaultValue": "Subnet-1",
+      "metadata": {
+        "description": "Subnet Name "
+      }
+    },
+    "vnetSubnetCidr": {
+      "type": "string",
+      "defaultValue": "10.1.0.0/24",
+      "metadata": {
+        "description": "Subnet CIDR address (Example: 10.1.0.0/24)"
       }
     },
     "lbName": {
@@ -54,11 +75,46 @@
         "description": "Name of the Primary Domain Controller (PDC)"
       }
     },
+    "pdcIP": {
+      "type": "string",
+      "defaultValue": "10.1.0.4",
+      "metadata": {
+        "description": "IP Address of the PDC virtual machine"
+      }
+    },
+    "pdcRdpEndpoint": {
+      "type": "string",
+      "defaultValue": "50004",
+      "metadata": {
+        "description": "The external TCP port for RDP to the PDC Server"
+      }
+    },
     "bdcName": {
       "type": "string",
       "defaultValue": "vm-BDC",
       "metadata": {
         "description": "Name of the Backup Domain Controller (PDC)"
+      }
+    },
+    "bdcIP": {
+      "type": "string",
+      "defaultValue": "10.1.0.5",
+      "metadata": {
+        "description": "IP Address of the PDC virtual machine"
+      }
+    },
+    "bdcRdpEndpoint": {
+      "type": "string",
+      "defaultValue": "50005",
+      "metadata": {
+        "description": "The external TCP port for RDP to the BDC Server"
+      }
+    },
+    "availabilitySetName": {
+      "type": "string",
+      "defaultValue": "as-AD",
+      "metadata": {
+        "description": "Azure Avalibility Set Name"
       }
     },
     "vmSize": {
@@ -120,13 +176,9 @@
   "variables": {
     "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'storad')]",
     "storageAccountType": "Standard_LRS",
-    "availabilitySetName": "as-AD",
-    "addressPrefix": "10.1.0.0/16",
-    "subnetName": "Subnet-1",
-    "subnetPrefix": "10.1.0.0/24",
     "publicIPAddressType": "Dynamic",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('vnetName'))]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables ('subnetName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/',parameters ('vnetSubnetName'))]",
     "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('publicIPAddressName'))]",
     "lbID": "[resourceId('Microsoft.Network/loadBalancers',parameters('lbName'))]",
     "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
@@ -139,11 +191,9 @@
     "pdcOSDiskName": "[concat (parameters('pdcname'), 'osdisk')]",
     "pdcADDiskName": "[concat (parameters('pdcname'), 'addisk')]",
     "pdcADDisksize": "32",
-    "pdcPrivateIp": "10.1.0.4",
     "bdcOSDiskName": "[concat (parameters('bdcname'), 'osdisk')]",
     "bdcADDiskName": "[concat (parameters('bdcname'), 'addisk')]",
     "bdcADDisksize": "32",
-    "bdcPrivateIp": "10.1.0.5",
     "DSCConfURL": "[concat(parameters('assetLocation'),'Configure.ps1.zip')]",
     "DSCConfFuncCreateADPDC": "Configure.ps1\\CreateADPDC",
     "DSCConfFuncCreateADBDC": "Configure.ps1\\CreateADBDC",
@@ -162,7 +212,7 @@
     },
     {
       "type": "Microsoft.Compute/availabilitySets",
-      "name": "[variables('availabilitySetName')]",
+      "name": "[parameters('availabilitySetName')]",
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "properties": { }
@@ -187,14 +237,14 @@
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('addressPrefix')]"
+            "[parameters('vnetAddressSpace')]"
           ]
         },
         "subnets": [
           {
-            "name": "[variables('subnetName')]",
+            "name": "[parameters('vnetSubnetName')]",
             "properties": {
-              "addressPrefix": "[variables('subnetPrefix')]"
+              "addressPrefix": "[parameters('vnetSubnetCidr')]"
             }
           }
         ]
@@ -215,7 +265,7 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('pdcPrivateIp')]",
+              "privateIPAddress": "[parameters('pdcIP')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -249,7 +299,7 @@
             "name": "ipconfig1",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('bdcPrivateIp')]",
+              "privateIPAddress": "[parameters('bdcIP')]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               },
@@ -300,7 +350,7 @@
                 "id": "[variables('frontEndIPConfigID')]"
               },
               "protocol": "tcp",
-              "frontendPort": 50001,
+              "frontendPort": "[parameters('pdcRdpEndpoint')]",
               "backendPort": 3389,
               "enableFloatingIP": false
             }
@@ -312,7 +362,7 @@
                 "id": "[variables('frontEndIPConfigID')]"
               },
               "protocol": "tcp",
-              "frontendPort": 50002,
+              "frontendPort": "[parameters('bdcRdpEndpoint')]",
               "backendPort": 3389,
               "enableFloatingIP": false
             }
@@ -328,11 +378,11 @@
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('pdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('availabilitySetName'))]"
       ],
       "properties": {
         "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName'))]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
         },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
@@ -393,11 +443,11 @@
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('bdcNicName'))]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('availabilitySetName'))]"
       ],
       "properties": {
         "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName'))]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('availabilitySetName'))]"
         },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
@@ -498,7 +548,7 @@
           "ModulesUrl": "[variables('DSCConfURL')]",
           "ConfigurationFunction": "[variables('DSCConfFuncCreateADBDC')]",
           "Properties": {
-            "DNSServer": "[variables('pdcPrivateIp')]",
+            "DNSServer": "[parameters('pdcIP')]",
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
               "UserName": "[parameters('adminUserName')]",
@@ -531,18 +581,18 @@
             "value": "[parameters('vnetname')]"
           },
           "virtualNetworkAddressRange": {
-            "value": "[variables('addressPrefix')]"
+            "value": "[parameters('vnetAddressSpace')]"
           },
           "subnetName": {
-            "value": "[variables('subnetName')]"
+            "value": "[parameters('vnetSubnetName')]"
           },
           "subnetRange": {
-            "value": "[variables('subnetPrefix')]"
+            "value": "[parameters('vnetSubnetCidr')]"
           },
           "DNSServerAddress": {
             "value": [
-              "[variables('pdcPrivateIp')]",
-              "[variables('bdcPrivateIp')]"
+              "[parameters('pdcIP')]",
+              "[parameters('bdcIP')]"
             ]
           }
         }

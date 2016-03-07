@@ -21,11 +21,19 @@ The template will deploy two domain controllers and configure them using Powersh
 ### Optional Parameters:
 |Name|Default|Description|
 |:---|:-------------|:---------------------|
-|vnetName|vnet-AD|VNET name|
+|vnetName|vnet-AD|Virtual Network name|
+|vnetAddressSpace|10.1.0.0/16|Virtual Network address space in CIDR format|
+|vnetSubnetName|Subnet-1|Subnet Name|
+|vnetSubnetCidr|10.1.0.0/24|Subnet CIDR address (Example: 10.1.0.0/24)|
 |lbName|lb-AD|Load Balancer name|
 |publicIPAddressName|pip-AD|Public IP Name|
 |pdcName|vm-PDC|Name of the Primary Domain Controller (PDC)|
+|pdcIP|10.1.0.4|IP Address of the PDC virtual machine|
+|pdcRdpEndpoint|50004|The external TCP port for RDP to the PDC Server|
 |bdcName|vm-BDC|Name of the Backup Domain Controller (PDC)|
+|bdcIP|10.1.0.5|IP Address of the PDC virtual machine|
+|bdcRdpEndpoint|50005|The external TCP port for RDP to the BDC Server|
+|availabilitySetName|as-AD|Azure Avalibility Set Name|
 |vmSize|Standard D1|Size of the VM|
 |imagePublisher|MicrosoftWindowsServer|Image Publisher|
 |imageOffer|WindowsServer|Image Offer|
