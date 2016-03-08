@@ -139,7 +139,7 @@
     "RDSHNicName": "[concat ('nic-', parameters('RDSHNamePrefix'))]",
 
     "assetLocation": "https://github.com/haavardg/AzureARM/raw/master/IaaS-RDS-Farm",
-    "DSCUrl": "[concat(variables('assetLocation'),'/ConfigureRDS.ps1.zip')]",
+    "DSCUrl": "[concat(variables('assetLocation'),'/ConfigureRDS.zip')]",
     "DSCFunctionRDSH": "ConfigureRDS.ps1\\ConfigureRDSH",
     "DSCFunctionRDWA": "ConfigureRDS.ps1\\ConfigureRDWA",
     "DSCFunctionRDS": "ConfigureRDS.ps1\\ConfigureRDS"
@@ -212,7 +212,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', parameters('publicIPAddressName'))]",
-        "[concat('Microsoft.Network/networkSecurityGroups', variables('RDWANsgName'))]"
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('RDWANsgName'))]"
       ],
       "properties": {
         "ipConfigurations": [
