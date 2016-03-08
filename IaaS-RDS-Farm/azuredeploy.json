@@ -138,7 +138,7 @@
     "RDSHVMName": "[concat ('vm-', parameters('RDSHNamePrefix'))]",
     "RDSHNicName": "[concat ('nic-', parameters('RDSHNamePrefix'))]",
 
-    "assetLocation": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/rds-deployment/",
+    "assetLocation": "https://github.com/haavardg/AzureARM/raw/master/IaaS-RDS-Farm",
     "DSCUrl": "[concat(variables('assetLocation'),'/ConfigureRDS.ps1.zip')]",
     "DSCFunctionRDSH": "ConfigureRDS.ps1\\ConfigureRDSH",
     "DSCFunctionRDWA": "ConfigureRDS.ps1\\ConfigureRDWA",
