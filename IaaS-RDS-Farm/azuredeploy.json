@@ -23,25 +23,37 @@
     "existingDomainName": {
       "type": "string",
       "metadata": {
-        "description": "Existing subnet that contains the domain controller"
+        "description": "Existing domain name to join RDS servers to"
+      }
+    },
+    "DomainJoinAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Username of the account with rights to join computers to domain"
+      }
+    },
+    "DomainJoinPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the domainjoin account"
       }
     },
     "dnsLabelPrefix": {
       "type": "string",
       "metadata": {
-        "description": "Unique public DNS prefix for the deployment. The fqdn will look something like '<dnsname>.westus.cloudapp.azure.com'. Up to 62 chars, digits or dashes, lowercase, should start with a letter: must conform to '^[a-z][a-z0-9-]{1,61}[a-z0-9]$'."
+        "description": "Unique public DNS prefix for the deployment. The fqdn will look something like '<dnsname>.westeurop.cloudapp.azure.com'. Up to 62 chars, digits or dashes, lowercase, should start with a letter"
       }
     },
     "adminUsername": {
       "type": "string",
       "metadata": {
-        "description": "The name of the administrator of the new VM and the domain. Exclusion list: 'administrator"
+        "description": "The name of the local administrator of the servers deployed, excluding: Administrator"
       }
     },
     "adminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "The password for the administrator account of the new VM and the domain"
+        "description": "The password for the local administrator account"
       }
     },
     "publicIPAddressName": {
@@ -49,6 +61,97 @@
       "defaultValue": "pip-RDS",
       "metadata": {
         "description": "Public IP Name"
+      }
+    },
+    "RDSHNamePrefix": {
+      "type": "string",
+      "defaultValue": "RDSH",
+      "metadata": {
+        "description": "Name prefix for the Session Host, name will be followed by a number based on how many session host servers defined"
+      }
+    },
+    "numberOfRdshInstances": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "Number of Session Host to deploy"
+      }
+    },
+    "RDSHSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2",
+      "allowedValues": [
+        "Standard_D1",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D1_v2",
+        "Standard_D2_v2",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_A1",
+        "Standard_A2",
+        "Standard_A3",
+        "Standard_A4"
+      ],
+      "metadata": {
+        "description": "The size of the session host VMs"
+      }
+    },
+    "RDWAName": {
+      "type": "string",
+      "defaultValue": "RDWA",
+      "metadata": {
+        "description": "Name of the RD Web Access and Gateway server"
+      }
+    },
+    "RDWASize": {
+      "type": "string",
+      "defaultValue": "Standard_D1",
+      "allowedValues": [
+        "Standard_D1",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D1_v2",
+        "Standard_D2_v2",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_A1",
+        "Standard_A2",
+        "Standard_A3",
+        "Standard_A4"
+      ],
+      "metadata": {
+        "description": "Size of the RD Web Access and Gateway server"
+      }
+    },
+    "RDCBName": {
+      "type": "string",
+      "defaultValue": "RDCB",
+      "metadata": {
+        "description": "Name of the RD Connection Broker server"
+      }
+    },
+    "RDCBSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1",
+      "allowedValues": [
+        "Standard_D1",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4",
+        "Standard_D1_v2",
+        "Standard_D2_v2",
+        "Standard_D3_v2",
+        "Standard_D4_v2",
+        "Standard_A1",
+        "Standard_A2",
+        "Standard_A3",
+        "Standard_A4"
+      ],
+      "metadata": {
+        "description": "Size of the RD Connection Broker server"
       }
     },
     "imageSKU": {
@@ -60,56 +163,6 @@
       ],
       "metadata": {
         "description": "Windows server SKU"
-      }
-
-    },
-    "numberOfRdshInstances": {
-      "type": "int",
-      "defaultValue": 2,
-      "metadata": {
-        "description": "Number of RDSH instances"
-      }
-    },
-    "RDSHNamePrefix": {
-      "type": "string",
-      "defaultValue": "RDSH",
-      "metadata": {
-        "description": "The size of the RDSH VMs"
-      }
-    },
-    "RDSHSize": {
-      "type": "string",
-      "defaultValue": "Standard_D2",
-      "metadata": {
-        "description": "The size of the RDSH VMs"
-      }
-    },
-    "RDWAName": {
-      "type": "string",
-      "defaultValue": "RDWA",
-      "metadata": {
-        "description": "Name of the Network Scurity Group for the "
-      }
-    },
-    "RDWASize": {
-      "type": "string",
-      "defaultValue": "Standard_D1",
-      "metadata": {
-        "description": "The size of the RDWA VM"
-      }
-    },
-    "RDCBName": {
-      "type": "string",
-      "defaultValue": "RDCB",
-      "metadata": {
-        "description": "Name of the Network Scurity Group for the "
-      }
-    },
-    "RDCBSize": {
-      "type": "string",
-      "defaultValue": "Standard_D1",
-      "metadata": {
-        "description": "The size of the RDWA VM"
       }
     }
   },
@@ -339,14 +392,14 @@
               "Properties": {
                 "DomainName": "[parameters('existingDomainName')]",
                 "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
+                  "UserName": "[parameters('DomainJoinAccount')]",
                   "Password": "PrivateSettingsRef:AdminPassword"
                 }
               }
             },
             "protectedSettings": {
               "Items": {
-                "AdminPassword": "[parameters('adminPassword')]"
+                "AdminPassword": "[parameters('DomainJoinPassword')]"
               }
             }
           }
@@ -462,14 +515,14 @@
               "Properties": {
                 "DomainName": "[parameters('existingDomainName')]",
                 "AdminCreds": {
-                  "UserName": "[parameters('adminUsername')]",
+                  "UserName": "[parameters('DomainJoinAccount')]",
                   "Password": "PrivateSettingsRef:AdminPassword"
                 }
               }
             },
             "protectedSettings": {
               "Items": {
-                "AdminPassword": "[parameters('adminPassword')]"
+                "AdminPassword": "[parameters('DomainJoinPassword')]"
               }
             }
           }
@@ -496,7 +549,7 @@
           "Properties": {
             "domainName": "[parameters('existingDomainName')]",
             "adminCreds": {
-              "UserName": "[parameters('adminUsername')]",
+              "UserName": "[parameters('DomainJoinAccount')]",
               "Password": "PrivateSettingsRef:adminPassword"
             },
             "connectionBroker": "[concat(parameters('RDCBName'), '.', parameters('existingDomainName'))]",
@@ -508,7 +561,7 @@
         },
         "protectedSettings": {
           "Items": {
-            "adminPassword": "[parameters('adminPassword')]"
+            "adminPassword": "[parameters('DomainJoinPassword')]"
           }
         }
       }

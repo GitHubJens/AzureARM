@@ -1,4 +1,4 @@
-# Create Active Directory Domain in Azure 
+# Create Active Directory Domain in Azure
 
 This template deploys the following resources in one Resourse Group:
 
@@ -41,4 +41,8 @@ The template will deploy two domain controllers and configure them using Powersh
 |assetLocation|https://github.com/haavardg/AzureARM/raw/master/IaaS-NewActiveDirectory/|The location of resources such as templates and DSC modules that the script is dependent|
 
 ### Deploy:
+#### azuredeply.net
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
+
+#### portal.azure.com
+[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fhaavardg%2FAzureARM%2Fmaster%2FIaaS-NewActiveDirectory%2Fazuredeploy.json)
