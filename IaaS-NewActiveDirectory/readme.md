@@ -41,7 +41,7 @@ The template will deploy two domain controllers and configure them using Powersh
 |assetLocation|https://github.com/haavardg/AzureARM/raw/master/IaaS-NewActiveDirectory/|The location of resources such as templates and DSC modules that the script is dependent|
 
 ### Deploy:
-#### azuredeply.net
+#### azuredeploy.net
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
 
 #### portal.azure.com

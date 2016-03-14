@@ -39,7 +39,7 @@ The template require a resource group with a existing vnet that is set up with d
 
 
 ### Deploy:
-#### azuredeply.net
+#### azuredeploy.net
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
 
 #### portal.azure.com
