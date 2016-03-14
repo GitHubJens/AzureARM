@@ -36,6 +36,8 @@ The template require a resource group with a existing vnet that is set up with d
 |RDCBSize|Standard_D1|Size of the RD Connection Broker server|
 |imageSKU|2012-R2-Datacenter|Windows server SKU|
 
+
+
 ### Deploy:
 #### azuredeply.net
 [![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)

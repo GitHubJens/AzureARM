@@ -275,6 +275,23 @@ configuration ConfigureRDS
 
             PsDscRunAsCredential = $domainCreds
         }
+        
+        Script script1
+        {
+      	    DependsOn = "[xRDSessionCollection]Collection"
+            SetScript = {
+                $CertPassword = $adminCreds.Password
+                mkdir "C:\Certificates\" -Force
+                New-RDCertificate -Role RDGateway -DnsName "$externalFqdn" -Password $CertPassword -ExportPath "C:\Certificates\RDS-SSCERT.pfx" -ConnectionBroker "$connectionBroker"
+                Set-RDCertificate -Role RDWebAccess -ImportPath "C:\Certificates\RDS-SSCERT.pfx" -Password $CertPassword -ConnectionBroker "$connectionBroker"
+                Set-RDCertificate -Role RDRedirector -ImportPath "C:\Certificates\RDS-SSCERT.pfx" -Password $CertPassword -ConnectionBroker "$connectionBroker"
+                Set-RDCertificate -Role RDPublishing -ImportPath "C:\Certificates\RDS-SSCERT.pfx" -Password $CertPassword -ConnectionBroker "$connectionBroker" 
+                Write-Verbose -Verbose "Configuring Self-Signed Cert"
+            }
+            GetScript =  { @{} }
+            TestScript = { $false}
+            
+        }
 
     }
 }
