@@ -120,6 +120,10 @@ configuration CreateADBDC
     [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
     $Interface=Get-NetAdapter|Where Name -Like "Ethernet*"|Select-Object -First 1
     $InterfaceAlias=$($Interface.Name)
+    
+    $DomainSplit = $DomainName.split(“.”)
+    $DomainDN = “DC=$($DomainSplit[0]),DC=$($DomainSplit[1])”
+
 
     Node localhost
     {
@@ -190,6 +194,83 @@ configuration CreateADBDC
             GetScript =  { @{} }
             TestScript = { $false}
             DependsOn = "[xADDomainController]BDC"
+        }
+    }
+}
+
+
+configuration ConfigureDomain
+{
+   param
+    (
+        [Parameter(Mandatory)]
+        [String]$DomainName,
+
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCredential]$Admincreds,
+
+        [Int]$RetryCount=20,
+        [Int]$RetryIntervalSec=30,
+        [System.Boolean]$ProtectedFromAccidentalDeletion = $true
+    )
+
+    Import-DscResource -ModuleName xActiveDirectory
+    [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+    
+    $DomainSplit = $DomainName.split(“.”)
+    $DomainDN = “DC=$($DomainSplit[0]),DC=$($DomainSplit[1])”
+
+
+    Node localhost
+    {
+        LocalConfigurationManager
+        {
+       	    ConfigurationMode = 'ApplyOnly'
+            RebootNodeIfNeeded = $true
+        }
+        xWaitForADDomain DscForestWait
+        {
+            DomainName = $DomainName
+            DomainUserCredential= $DomainCreds
+            RetryCount = $RetryCount
+            RetryIntervalSec = $RetryIntervalSec
+        }
+        xADOrganizationalUnit DirOU
+        {
+           Name = "DIR"
+           Path = $DomainDN
+           ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+           Description = "Directory Root OU"
+           Ensure = 'Present'
+           DependsOn = "[xWaitForADDomain]DscForestWait"
+        }
+        
+        xADOrganizationalUnit ServersOU
+        {
+           Name = "Servers"
+           Path = "ou=DIR,$DomainDN"
+           ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+           Description = "Servers OU"
+           Ensure = 'Present'
+           DependsOn = "[xWaitForADDomain]DscForestWait"
+        }
+        xADOrganizationalUnit UsersOU
+        {
+           Name = "Users"
+           Path = "ou=DIR,$DomainDN"
+           ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+           Description = "Users OU"
+           Ensure = 'Present'
+           DependsOn = "[xWaitForADDomain]DscForestWait"
+        }
+        xADOrganizationalUnit GroupsOU
+        {
+           Name = "Groups"
+           Path = "ou=DIR,$DomainDN"
+           ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+           Description = "Groups OU"
+           Ensure = 'Present'
+           DependsOn = "[xWaitForADDomain]DscForestWait"
         }
     }
 }
